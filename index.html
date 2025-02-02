@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open Instagram</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #2e015a, #6829b7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: white;
+        }
+
+        .container {
+            text-align: center;
+            background-color: #472b71;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            max-width: 90%;
+        }
+
+        button {
+            background-color: #835bdb;
+            border: none;
+            padding: 15px 30px;
+            color: white;
+            font-size: 16px;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #6e48c5;
+        }
+
+        .instructions {
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #ffa500;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button id="openInstagram">Open Instagram</button>
+        <div class="instructions hidden" id="instructions">
+            <p>If Instagram didn't open:</p>
+            <p>1. Tap "Copy Link" below</p>
+            <p>2. Open browser and paste link</p>
+        </div>
+        <button onclick="copyLink()" class="hidden" id="copyButton">Copy Link</button>
+    </div>
+
+    <script>
+        const config = {
+            android: {
+                app: 'intent://instagram.com/_u/virgin_sony/#Intent;package=com.instagram.android;scheme=https;end',
+                web: 'https://www.instagram.com/virgin_sony'
+            },
+            ios: {
+                app: 'instagram://user?username=virgin_sony',
+                web: 'https://www.instagram.com/virgin_sony?igsh=OGQ5ZDc2ODk2ZA=='
+            }
+        };
+
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const isTikTok = /TikTok/i.test(navigator.userAgent);
+        let fallbackTriggered = false;
+
+        function openInstagram() {
+            // Для iOS в TikTok WebView - особый сценарий
+            if(isIOS && isTikTok) {
+                handleIOSinTikTok();
+                return;
+            }
+
+            // Основная логика открытия
+            try {
+                const link = isIOS ? config.ios.app : config.android.app;
+                window.location = link;
+                
+                // Если не открылось через 1 секунду - фолбэк
+                setTimeout(() => {
+                    if(!fallbackTriggered && !document.hidden) {
+                        handleFallback();
+                    }
+                }, 1000);
+            } catch(e) {
+                handleFallback();
+            }
+        }
+
+        function handleIOSinTikTok() {
+            // Специальный обработчик для iOS в TikTok
+            copyLink();
+            showInstructions();
+            
+            // Попытка открыть через iframe (обход блокировки)
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = config.ios.app;
+            document.body.appendChild(iframe);
+            
+            setTimeout(() => {
+                if(!document.hidden) {
+                    window.open(config.ios.web, '_blank');
+                }
+            }, 500);
+        }
+
+        function handleFallback() {
+            fallbackTriggered = true;
+            showInstructions();
+            const webLink = isIOS ? config.ios.web : config.android.web;
+            window.open(webLink, isTikTok ? '_blank' : '_self');
+        }
+
+        function showInstructions() {
+            document.getElementById('instructions').classList.remove('hidden');
+            document.getElementById('copyButton').classList.remove('hidden');
+        }
+
+        function copyLink() {
+            const link = isIOS ? config.ios.web : config.android.web;
+            navigator.clipboard.writeText(link).then(() => {
+                alert('Link copied to clipboard!');
+            });
+        }
+
+        // Инициализация
+        document.getElementById('openInstagram').addEventListener('click', function(e) {
+            e.preventDefault();
+            openInstagram();
+        });
+
+        // Автозапуск для Android в TikTok
+        if(!isIOS && isTikTok) {
+            openInstagram();
+        }
+    </script>
+</body>
+</html>
